@@ -4,14 +4,15 @@ on:
   push:
     branches: [main, master]
 
+permissions: write-all
+
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Needed for git history (for version number)
+          fetch-depth: 0
 
       - name: Generate Version
         id: version
