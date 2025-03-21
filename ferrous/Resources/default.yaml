@@ -1,10 +1,10 @@
 tierzero:
   github:
-    user: ""
-    organisation: "onefootball"
+    user: "XXXXXX"
+    organisation: "motain"
     timezone: "Europe/Berlin"
     repositories:
-      - onefootball/ferrous
+      - motain/iac
   links:
     - name: Trusted Advisor
       url: https://us-east-1.console.aws.amazon.com/trustedadvisor/home?region=us-east-1#/dashboard

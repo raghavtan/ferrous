@@ -71,9 +71,6 @@ final class BackgroundService {
         logger.info("Starting background service with base interval \(interval) seconds")
         defaultRefreshInterval = interval
 
-        // Configure task-specific intervals
-        updateIntervals()
-
         // Initial update
         refreshAll()
 
@@ -98,9 +95,6 @@ final class BackgroundService {
     func updateRefreshInterval(_ interval: TimeInterval) {
         logger.debug("Updating refresh interval to \(interval) seconds")
         defaultRefreshInterval = max(10, interval)  // Minimum 10 seconds
-
-        // Update task-specific intervals
-        updateIntervals()
 
         // Restart the timer with the new interval
         if timer != nil {
@@ -300,24 +294,6 @@ final class BackgroundService {
     }
 
     // MARK: - Private Methods
-
-    /// Updates task-specific intervals based on the default interval
-    private func updateIntervals() {
-        // GitHub: 5 times the default interval
-        githubRefreshInterval = defaultRefreshInterval * 5
-
-        // Tools: Same as default
-        toolsRefreshInterval = defaultRefreshInterval
-
-        // Kubernetes: 3 times the default interval
-        kubernetesRefreshInterval = defaultRefreshInterval * 3
-
-        // Version: 30 times the default interval (less frequent)
-        versionRefreshInterval = defaultRefreshInterval * 30
-
-        logger.debug("Updated refresh intervals - GitHub: \(githubRefreshInterval)s, Tools: \(toolsRefreshInterval)s, Kubernetes: \(kubernetesRefreshInterval)s, Version: \(versionRefreshInterval)s")
-    }
-
     /// Performs scheduled updates based on elapsed time
     private func performScheduledUpdates() {
         let now = Date().timeIntervalSince1970

@@ -14,19 +14,19 @@ enum Constants {
     /// Refresh intervals for different services
     enum RefreshInterval {
         /// GitHub pull requests check interval (5 minutes)
-        static let github: TimeInterval = 300
+        static let github: TimeInterval = 30000
 
         /// Tool status check interval (1 minute)
-        static let tools: TimeInterval = 60
+        static let tools: TimeInterval = 6000
 
         /// Kubernetes context check interval (5 minutes)
-        static let kubernetes: TimeInterval = 300
+        static let kubernetes: TimeInterval = 30000
 
         /// Version check interval (1 hour)
-        static let version: TimeInterval = 3600
+        static let version: TimeInterval = 20
 
         /// Default interval when nothing specified
-        static let `default`: TimeInterval = 60
+        static let `default`: TimeInterval = 6000
     }
 
     /// File paths for various resources

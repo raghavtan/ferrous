@@ -34,7 +34,7 @@ final class VersionService {
         // Configure the releases URL
         // Default organization is "onefootball" and repo is "ferrous"
         // This should be updated from config if available
-        var org = "onefootball"
+        var org = "motain"
         let repo = "ferrous"
 
         if let config = ConfigManager.shared.config?.tierZero?.github {
@@ -48,13 +48,13 @@ final class VersionService {
         config.timeoutIntervalForRequest = 15.0
         session = URLSession(configuration: config)
 
-        logger.debug("Initialized version service - current version: \(currentVersion)")
+        logger.info("Initialized version service - current version: \(currentVersion)")
     }
 
     /// Checks for available updates
     /// - Parameter completion: Callback with result containing update status or error
     func checkForUpdates(completion: @escaping (Result<Bool, Error>) -> Void) {
-        logger.debug("Checking for updates at \(releasesURL)")
+        logger.info("Checking for updates at \(releasesURL)")
 
         guard let url = URL(string: releasesURL) else {
             logger.error("Invalid releases URL: \(releasesURL)")
