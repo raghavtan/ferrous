@@ -24,7 +24,7 @@ checker:
     vpn:
       title: vpn
       help: "Check VPN status"
-      checkCommand: "ping -c 1 10.0.0.1"
+      checkCommand: 'pgrep -if "AWS VPN Client/AWS VPN Client.app/Contents/Resources/openvpn/acvc-openvpn"'
     aws:
       title: aws-cli
       help: "Check AWS CLI status"
