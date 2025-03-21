@@ -17,7 +17,7 @@ final class StatusBarController {
 
     /// Initializes the status bar controller
     init() {
-        logger.debug("Initializing status bar controller")
+        FerrousLogger.shared.debug("Initializing status bar controller", log: logger)
 
         // Create and configure the popover first
         popover = NSPopover()
@@ -42,7 +42,7 @@ final class StatusBarController {
         }
         eventMonitor?.start()
 
-        logger.debug("Status bar controller initialized")
+        FerrousLogger.shared.debug("Status bar controller initialized", log: logger)
     }
 
     /// Toggles the popover visibility
@@ -59,11 +59,11 @@ final class StatusBarController {
     /// - Parameter sender: The sender of the action
     func showPopover(_ sender: Any?) {
         guard let button = statusItem.button else {
-            logger.warning("Status item has no button")
+            FerrousLogger.shared.warning("Status item has no button", log: logger)
             return
         }
 
-        logger.debug("Showing popover")
+        FerrousLogger.shared.debug("Showing popover", log: logger)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: NSRectEdge.minY)
         eventMonitor?.start()
     }
@@ -71,7 +71,7 @@ final class StatusBarController {
     /// Closes the popover
     /// - Parameter sender: The sender of the action
     func closePopover(_ sender: Any?) {
-        logger.debug("Closing popover")
+        FerrousLogger.shared.debug("Closing popover", log: logger)
         popover.performClose(sender)
         eventMonitor?.stop()
     }
@@ -79,7 +79,7 @@ final class StatusBarController {
     /// Deinitializer
     deinit {
         eventMonitor?.stop()
-        logger.debug("Status bar controller deinitialized")
+        FerrousLogger.shared.debug("Status bar controller deinitialized", log: logger)
     }
 }
 

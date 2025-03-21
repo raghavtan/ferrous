@@ -54,7 +54,7 @@ final class MainMenuViewModel: ObservableObject {
 
     /// Private initializer to support singleton pattern
     private init() {
-        logger.debug("Initializing MainMenuViewModel")
+        FerrousLogger.shared.debug("Initializing MainMenuViewModel", log: logger)
         loadCustomData()
     }
 
@@ -62,7 +62,7 @@ final class MainMenuViewModel: ObservableObject {
 
     /// Starts monitoring for updates
     func startMonitoring() {
-        logger.debug("Starting monitoring in MainMenuViewModel")
+        FerrousLogger.shared.debug("Starting monitoring in MainMenuViewModel", log: logger)
 
         // Subscribe to GitHub updates
         BackgroundService.shared.githubUpdated
@@ -104,13 +104,13 @@ final class MainMenuViewModel: ObservableObject {
 
     /// Stops monitoring for updates
     func stopMonitoring() {
-        logger.debug("Stopping monitoring in MainMenuViewModel")
+        FerrousLogger.shared.debug("Stopping monitoring in MainMenuViewModel", log: logger)
         cancellables.removeAll()
     }
 
     /// Refreshes all data
     func refreshAll() {
-        logger.debug("Manually refreshing all data in MainMenuViewModel")
+        FerrousLogger.shared.debug("Manually refreshing all data in MainMenuViewModel", log: logger)
 
         isLoadingPRs = true
         isLoadingTools = true
@@ -122,7 +122,7 @@ final class MainMenuViewModel: ObservableObject {
     /// Updates the refresh interval
     /// - Parameter interval: The new interval in seconds
     func updateRefreshInterval(_ interval: Double) {
-        logger.debug("Updating refresh interval to \(interval) seconds")
+        FerrousLogger.shared.debug("Updating refresh interval to \(interval) seconds", log: logger)
         BackgroundService.shared.updateRefreshIntervals(baseInterval: interval)
 
         // Save to user defaults
@@ -133,12 +133,12 @@ final class MainMenuViewModel: ObservableObject {
 
     /// Loads custom links and actions from config
     private func loadCustomData() {
-        logger.debug("Loading custom data from config")
+        FerrousLogger.shared.debug("Loading custom data from config", log: logger)
 
         // Load links
         if let links = ConfigManager.shared.config?.tierZero?.links {
             customLinks = links.compactMap { $0.toDomainModel() }
-            logger.debug("Loaded \(customLinks.count) custom links")
+            FerrousLogger.shared.debug("Loaded \(customLinks.count) custom links", log: logger)
         }
 
         // Load actions
@@ -149,7 +149,7 @@ final class MainMenuViewModel: ObservableObject {
                     actions.append(action)
                 }
             }
-            logger.debug("Loaded \(actions.count) custom actions")
+            FerrousLogger.shared.debug("Loaded \(actions.count) custom actions", log: logger)
         }
         customActions = actions
     }

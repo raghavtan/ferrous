@@ -23,7 +23,7 @@ final class ConfigManager {
     /// - Returns: `true` if successful, `false` otherwise
     @discardableResult
     func loadConfig() -> Bool {
-        logger.debug("Loading configuration from \(Constants.Path.configFile.path)")
+        FerrousLogger.shared.debug("Loading configuration from \(Constants.Path.configFile.path)", log: logger)
 
         do {
             // Check if config directory exists, create it if needed
@@ -33,20 +33,20 @@ final class ConfigManager {
             if fileManager.fileExists(atPath: Constants.Path.configFile.path) {
                 let configData = try Data(contentsOf: Constants.Path.configFile)
                 guard let configString = String(data: configData, encoding: .utf8) else {
-                    logger.error("Failed to decode config data as UTF-8")
+                    FerrousLogger.shared.error("Failed to decode config data as UTF-8", log: logger)
                     return false
                 }
 
                 // Parse YAML
                 config = try YAMLDecoder().decode(AppConfig.self, from: configString)
-                logger.debug("Configuration loaded successfully")
+                FerrousLogger.shared.debug("Configuration loaded successfully", log: logger)
                 return true
             } else {
-                logger.notice("Config file does not exist at \(Constants.Path.configFile.path)")
+                FerrousLogger.shared.warning("Config file does not exist at \(Constants.Path.configFile.path)", log: logger)
                 return false
             }
         } catch {
-            logger.error("Error loading config: \(error)")
+            FerrousLogger.shared.error("Error loading config: \(error)", log: logger)
             return false
         }
     }
@@ -56,7 +56,7 @@ final class ConfigManager {
     /// - Returns: `true` if successful, `false` otherwise
     @discardableResult
     func saveConfig(_ config: AppConfig) -> Bool {
-        logger.debug("Saving configuration to \(Constants.Path.configFile.path)")
+        FerrousLogger.shared.debug("Saving configuration to \(Constants.Path.configFile.path)", log: logger)
 
         do {
             // Check if config directory exists, create it if needed
@@ -74,10 +74,10 @@ final class ConfigManager {
             // Notify listeners
             NotificationCenter.default.post(name: Constants.NotificationName.configurationUpdated, object: nil)
 
-            logger.debug("Configuration saved successfully")
+            FerrousLogger.shared.debug("Configuration saved successfully", log: logger)
             return true
         } catch {
-            logger.error("Error saving config: \(error)")
+            FerrousLogger.shared.error("Error saving config: \(error)", log: logger)
             return false
         }
     }
@@ -88,7 +88,7 @@ final class ConfigManager {
     ///   - githubOrg: GitHub organization
     /// - Returns: A default configuration
     func createDefaultConfig(githubUser: String, githubOrg: String) -> AppConfig {
-        logger.debug("Creating default configuration for user \(githubUser), org \(githubOrg)")
+        FerrousLogger.shared.debug("Creating default configuration for user \(githubUser), org \(githubOrg)", log: logger)
 
         // Create GitHub config
         let githubConfig = GitHubConfig(
@@ -145,14 +145,14 @@ final class ConfigManager {
                    type: "url",
                    url: "https://console.jumpcloud.com/userconsole#/"
                )
-               
+
                actions["itsupport"] = CustomActionConfig(
                    title: "IT Support",
                    help: "Open IT Support",
                    type: "url",
                    url: "https://onefootball.atlassian.net/servicedesk/customer/portal/1"
                )
-               
+
                actions["saml"] = CustomActionConfig(
                    title: "SAML Profiles",
                    help: "List of SAML Profiles",
@@ -161,7 +161,7 @@ final class ConfigManager {
                    jsonPathExpressions: "$..name",
                    parser: "toml"
                )
-               
+
                return AppConfig(
                    tierZero: tierZeroConfig,
                    checker: checkerConfig,
@@ -173,17 +173,17 @@ final class ConfigManager {
     /// - Returns: `true` if successful, `false` otherwise
     @discardableResult
     func copyDefaultConfigFromBundle() -> Bool {
-        logger.debug("Looking for default config in app bundle")
+        FerrousLogger.shared.debug("Looking for default config in app bundle", log: logger)
 
         // Skip if config file already exists
         if fileManager.fileExists(atPath: Constants.Path.configFile.path) {
-            logger.debug("Config file already exists, skipping copy")
+            FerrousLogger.shared.debug("Config file already exists, skipping copy", log: logger)
             return true
         }
 
         // Look for default.yaml in the main bundle
         guard let bundlePath = Bundle.main.path(forResource: "default", ofType: "yaml") else {
-            logger.warning("Default config not found in bundle")
+            FerrousLogger.shared.warning("Default config not found in bundle", log: logger)
             return false
         }
 
@@ -193,10 +193,10 @@ final class ConfigManager {
 
             // Copy file
             try fileManager.copyItem(atPath: bundlePath, toPath: Constants.Path.configFile.path)
-            logger.info("Default config copied from bundle")
+            FerrousLogger.shared.info("Default config copied from bundle", log: logger)
             return true
         } catch {
-            logger.error("Failed to copy default config: \(error)")
+            FerrousLogger.shared.error("Failed to copy default config: \(error)", log: logger)
             return false
         }
     }

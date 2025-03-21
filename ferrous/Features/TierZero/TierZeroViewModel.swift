@@ -52,9 +52,9 @@ final class TierZeroViewModel: ObservableObject {
         if let config = ConfigManager.shared.config?.tierZero?.github {
             username = config.user
             repositories = config.repositories
-            logger.debug("Loaded config - username: \(username), repos: \(repositories.count)")
+            FerrousLogger.shared.debug("Loaded config - username: \(username), repos: \(repositories.count)", log: logger)
         } else {
-            logger.warning("No GitHub configuration found")
+            FerrousLogger.shared.warning("No GitHub configuration found", log: logger)
         }
     }
 
@@ -94,7 +94,7 @@ final class TierZeroViewModel: ObservableObject {
         self.userPullRequests = userPRs
         self.repoPullRequests = repoPRs
 
-        logger.debug("Processed \(pullRequests.count) pull requests - user: \(userPRs.count), repo: \(repoPRs.count)")
+        FerrousLogger.shared.debug("Processed \(pullRequests.count) pull requests - user: \(userPRs.count), repo: \(repoPRs.count)", log: logger)
     }
 
     /// Loads pull requests from GitHub
@@ -103,7 +103,7 @@ final class TierZeroViewModel: ObservableObject {
 
         // If we already have data, show it while loading
         if userPullRequests.isEmpty && repoPullRequests.isEmpty {
-            logger.debug("Triggering pull request refresh")
+            FerrousLogger.shared.debug("Triggering pull request refresh", log: logger)
             BackgroundService.shared.refreshGitHubPRs()
         } else {
             // Start a timer to set isLoading back to false if it takes too long

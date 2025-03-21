@@ -55,16 +55,16 @@ final class VersionService {
         // Load GitHub token
         loadToken()
 
-        logger.info("Initialized version service - current version: \(currentVersion)")
+        FerrousLogger.shared.info("Initialized version service - current version: \(currentVersion)", log: logger)
     }
 
     /// Checks for available updates
     /// - Parameter completion: Callback with result containing update status or error
     func checkForUpdates(completion: @escaping (Result<Bool, Error>) -> Void) {
-        logger.info("Checking for updates at \(releasesURL)")
+        FerrousLogger.shared.info("Checking for updates at \(releasesURL)", log: logger)
 
         guard let url = URL(string: releasesURL) else {
-            logger.error("Invalid releases URL: \(releasesURL)")
+            FerrousLogger.shared.error("Invalid releases URL: \(releasesURL)", log: logger)
             completion(.failure(VersionError.invalidURL))
             return
         }
@@ -76,16 +76,16 @@ final class VersionService {
         // Add auth token if available
         if let token = githubToken, !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            logger.debug("Using GitHub token for version check")
+            FerrousLogger.shared.debug("Using GitHub token for version check", log: logger)
         } else {
-            logger.warning("No GitHub token available for version check")
+            FerrousLogger.shared.warning("No GitHub token available for version check", log: logger)
         }
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
 
             if let error = error {
-                self.logger.error("Network error checking for updates: \(error)")
+                FerrousLogger.shared.error("Network error checking for updates: \(error)", log: logger)
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -93,7 +93,7 @@ final class VersionService {
             }
 
             guard let httpResponse = response as? HTTPURLResponse else {
-                self.logger.error("Invalid response type")
+                FerrousLogger.shared.error("Invalid response type", log: logger)
                 DispatchQueue.main.async {
                     completion(.failure(VersionError.invalidResponse))
                 }
@@ -101,9 +101,9 @@ final class VersionService {
             }
 
             if httpResponse.statusCode != 200 {
-                self.logger.error("HTTP error: \(httpResponse.statusCode)")
+                FerrousLogger.shared.error("HTTP error: \(httpResponse.statusCode)", log: logger)
                 if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                    self.logger.error("Authentication issue. Token may be invalid or missing.")
+                    FerrousLogger.shared.error("Authentication issue. Token may be invalid or missing.", log: logger)
                 }
                 DispatchQueue.main.async {
                     completion(.failure(VersionError.httpError(httpResponse.statusCode)))
@@ -112,7 +112,7 @@ final class VersionService {
             }
 
             guard let data = data else {
-                self.logger.error("No data received")
+                FerrousLogger.shared.error("No data received", log: logger)
                 DispatchQueue.main.async {
                     completion(.failure(VersionError.noData))
                 }
@@ -135,13 +135,13 @@ final class VersionService {
                 let updateAvailable = self.isNewerVersion(version, than: self.currentVersion)
                 self.updateAvailable = updateAvailable
 
-                self.logger.debug("Update check complete - latest: \(version), updateAvailable: \(updateAvailable)")
+                FerrousLogger.shared.debug("Update check complete - latest: \(version), updateAvailable: \(updateAvailable)", log: logger)
 
                 DispatchQueue.main.async {
                     completion(.success(updateAvailable))
                 }
             } catch {
-                self.logger.error("Failed to parse release info: \(error)")
+                FerrousLogger.shared.error("Failed to parse release info: \(error)", log: logger)
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -182,7 +182,7 @@ final class VersionService {
     private func loadToken() {
         // First try keychain
         if let keychainToken = loadTokenFromKeychain() {
-            logger.debug("Using GitHub token from keychain")
+            FerrousLogger.shared.debug("Using GitHub token from keychain", log: logger)
             githubToken = keychainToken
             return
         }
@@ -192,7 +192,7 @@ final class VersionService {
         
         for varName in envVarNames {
             if let envToken = ProcessInfo.processInfo.environment[varName], !envToken.isEmpty {
-                logger.debug("Using GitHub token from environment variable \(varName)")
+                FerrousLogger.shared.debug("Using GitHub token from environment variable \(varName)", log: logger)
                 githubToken = envToken
                 
                 // Save to keychain for future use
@@ -203,7 +203,7 @@ final class VersionService {
         
         // Try shell environment value via process
         if let shellToken = getTokenFromShellEnvironment() {
-            logger.debug("Using GitHub token from shell environment")
+            FerrousLogger.shared.debug("Using GitHub token from shell environment", log: logger)
             githubToken = shellToken
             
             // Save to keychain for future use
@@ -230,20 +230,20 @@ final class VersionService {
                     
                     if !token.isEmpty {
                         githubToken = token
-                        logger.debug("Loaded GitHub token from file: \(tokenPath.path)")
+                        FerrousLogger.shared.debug("Loaded GitHub token from file: \(tokenPath.path)", log: logger)
                         
                         // Save to keychain for future use
                         _ = saveTokenToKeychain(token: token)
                         return
                     }
                 } catch {
-                    logger.error("Failed to load GitHub token from file \(tokenPath.path): \(error)")
+                    FerrousLogger.shared.error("Failed to load GitHub token from file \(tokenPath.path): \(error)", log: logger)
                 }
             }
         }
         
         // If we've got this far, no token was found
-        logger.warning("No GitHub token found in keychain, environment variables, or files")
+        FerrousLogger.shared.warning("No GitHub token found in keychain, environment variables, or files", log: logger)
     }
     
     /// Loads the GitHub token from the Keychain
@@ -294,10 +294,10 @@ final class VersionService {
         let status = SecItemAdd(addQuery as CFDictionary, nil)
         
         if status == errSecSuccess {
-            logger.debug("Saved GitHub token to keychain")
+            FerrousLogger.shared.debug("Saved GitHub token to keychain", log: logger)
             return true
         } else {
-            logger.error("Failed to save GitHub token to keychain. Status: \(status)")
+            FerrousLogger.shared.error("Failed to save GitHub token to keychain. Status: \(status)", log: logger)
             return false
         }
     }

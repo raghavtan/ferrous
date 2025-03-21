@@ -61,7 +61,7 @@ final class KubernetesViewModel: ObservableObject {
         isUpdating = true
         error = nil
 
-        logger.info("Updating kubeconfig to use stable context: \(stableContext.name)")
+        FerrousLogger.shared.info("Updating kubeconfig to use stable context: \(stableContext.name)", log: logger)
 
         KubernetesService.shared.updateKubeConfig { [weak self] result in
             DispatchQueue.main.async {
@@ -71,13 +71,13 @@ final class KubernetesViewModel: ObservableObject {
 
                 switch result {
                 case .success:
-                    self.logger.info("Kubeconfig updated successfully")
+                    FerrousLogger.shared.info("Kubeconfig updated successfully", log: self.logger)
                     // Refresh the contexts to show the update
                     BackgroundService.shared.refreshKubernetesContexts()
 
                 case .failure(let updateError):
                     self.error = updateError.localizedDescription
-                    self.logger.error("Failed to update kubeconfig: \(updateError)")
+                    FerrousLogger.shared.error("Failed to update kubeconfig: \(updateError)", log: self.logger)
                 }
             }
         }

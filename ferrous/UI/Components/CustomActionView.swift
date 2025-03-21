@@ -175,7 +175,7 @@ struct CustomActionView: View {
                         }
                     }
                 } catch {
-                    logger.error("Failed to load options for action '\(action.title)': \(error)")
+                    FerrousLogger.shared.error("Failed to load options for action '\(action.title)': \(error)", log: logger)
                 }
             }
 
@@ -216,7 +216,7 @@ struct CustomActionView: View {
     /// Executes an action for the selected option
     /// - Parameter option: The selected option
     private func executeAction(for option: String) {
-        logger.debug("Executing action '\(action.title)' for option '\(option)'")
+        FerrousLogger.shared.debug("Executing action '\(action.title)' for option '\(option)'", log: logger)
 
         // This is a simplified implementation
         // In a real app, this would depend on the action type
@@ -228,9 +228,9 @@ struct CustomActionView: View {
                 let (_, error, exitCode) = Process.shell(command)
 
                 if exitCode != 0 {
-                    logger.error("Failed to execute SAML command: \(error)")
+                    FerrousLogger.shared.error("Failed to execute SAML command: \(error)", log: logger)
                 } else {
-                    logger.debug("Successfully executed SAML command")
+                    FerrousLogger.shared.debug("Successfully executed SAML command", log: logger)
                 }
             }
         }

@@ -23,12 +23,12 @@ final class ToolCheckService {
     /// Loads tool configurations from the app config
     func loadToolConfigurations() {
         guard let checkerConfig = ConfigManager.shared.config?.checker else {
-            logger.warning("No tool checker configuration found")
+            FerrousLogger.shared.warning("No tool checker configuration found", log: logger)
             return
         }
 
         toolConfigs = checkerConfig.tools
-        logger.debug("Loaded \(toolConfigs.count) tool configurations")
+        FerrousLogger.shared.debug("Loaded \(toolConfigs.count) tool configurations", log: logger)
     }
 
     /// Checks the status of all configured tools
@@ -39,13 +39,13 @@ final class ToolCheckService {
             loadToolConfigurations()
 
             if toolConfigs.isEmpty {
-                logger.warning("No tool configurations available")
+                FerrousLogger.shared.warning("No tool configurations available", log: logger)
                 completion(.failure(ToolCheckError.noToolsConfigured))
                 return
             }
         }
 
-        logger.debug("Checking status of \(toolConfigs.count) tools")
+        FerrousLogger.shared.debug("Checking status of \(toolConfigs.count) tools", log: logger)
 
         let dispatchGroup = DispatchGroup()
         var results: [String: ToolStatus] = [:]
@@ -82,7 +82,7 @@ final class ToolCheckService {
 
             // Return all statuses, even if some failed
             let statuses = Array(results.values)
-            self.logger.debug("Completed checking \(statuses.count) tools - \(statuses.filter { $0.isAvailable }.count) available")
+            FerrousLogger.shared.debug("Completed checking \(statuses.count) tools - \(statuses.filter { $0.isAvailable }.count) available", log: logger)
 
             completion(.success(statuses))
         }
@@ -97,7 +97,7 @@ final class ToolCheckService {
         DispatchQueue.global(qos: .utility).async { [weak self] in
             guard let self = self else { return }
 
-            self.logger.debug("Checking tool: \(id) with command: \(config.checkCommand)")
+            FerrousLogger.shared.debug("Checking tool: \(id) with command: \(config.checkCommand)", log: logger)
 
             // Create a process to run the check command
             let process = Process()
@@ -130,7 +130,7 @@ final class ToolCheckService {
                 // Handle timeout
                 if result == .timedOut {
                     process.terminate()
-                    self.logger.warning("Tool check timed out for \(id)")
+                    FerrousLogger.shared.warning("Tool check timed out for \(id)", log: logger)
 
                     let status = config.toDomainModel(
                         id: id,
@@ -160,13 +160,13 @@ final class ToolCheckService {
                     errorMessage: errorMessage
                 )
 
-                self.logger.debug("Tool \(id) check result: \(isAvailable ? "available" : "unavailable")")
+                FerrousLogger.shared.debug("Tool \(id) check result: \(isAvailable ? "available" : "unavailable")", log: logger)
 
                 DispatchQueue.main.async {
                     completion(.success(status))
                 }
             } catch {
-                self.logger.error("Failed to check tool \(id): \(error)")
+                FerrousLogger.shared.error("Failed to check tool \(id): \(error)", log: logger)
 
                 let status = config.toDomainModel(
                     id: id,

@@ -45,7 +45,7 @@ final class GitHubService {
     /// Loads configuration from ConfigManager
     func loadConfig() {
         guard let config = ConfigManager.shared.config?.tierZero?.github else {
-            logger.warning("No GitHub configuration found")
+            FerrousLogger.shared.warning("No GitHub configuration found", log: self.logger)
             isConfigured = false
             return
         }
@@ -54,7 +54,7 @@ final class GitHubService {
         organization = config.organisation
         repositories = config.repositories
         
-        logger.debug("Loaded GitHub config - user: \(username), org: \(organization), repos: \(repositories.count)")
+        FerrousLogger.shared.debug("Loaded GitHub config - user: \(username), org: \(organization), repos: \(repositories.count)", log: self.logger)
         isConfigured = true
     }
     
@@ -73,7 +73,7 @@ final class GitHubService {
         
         // Ensure we have a token
         guard let token = githubToken, !token.isEmpty else {
-            logger.error("No GitHub token available")
+            FerrousLogger.shared.error("No GitHub token available", log: self.logger)
             completion(.failure(GitHubError.noToken))
             return
         }
@@ -82,7 +82,7 @@ final class GitHubService {
         // For now just return an empty array, not mock data
         
         DispatchQueue.global(qos: .userInitiated).async {
-            self.logger.debug("Fetching pull requests")
+            FerrousLogger.shared.debug("Fetching pull requests", log: self.logger)
             
             // This is where you would implement the actual GitHub API calls
             // For example:
@@ -101,7 +101,7 @@ final class GitHubService {
     private func loadToken() {
         // First try keychain
         if let keychainToken = loadTokenFromKeychain() {
-            logger.debug("Using GitHub token from keychain")
+            FerrousLogger.shared.debug("Using GitHub token from keychain", log: self.logger)
             githubToken = keychainToken
             return
         }
@@ -111,7 +111,7 @@ final class GitHubService {
         
         for varName in envVarNames {
             if let envToken = ProcessInfo.processInfo.environment[varName], !envToken.isEmpty {
-                logger.debug("Using GitHub token from environment variable \(varName)")
+                FerrousLogger.shared.debug("Using GitHub token from environment variable \(varName)", log: self.logger)
                 githubToken = envToken
                 
                 // Save to keychain for future use
@@ -122,7 +122,7 @@ final class GitHubService {
         
         // Try shell environment value via process
         if let shellToken = getTokenFromShellEnvironment() {
-            logger.debug("Using GitHub token from shell environment")
+            FerrousLogger.shared.debug("Using GitHub token from shell environment", log: self.logger)
             githubToken = shellToken
             
             // Save to keychain for future use
@@ -149,20 +149,20 @@ final class GitHubService {
                     
                     if !token.isEmpty {
                         githubToken = token
-                        logger.debug("Loaded GitHub token from file: \(tokenPath.path)")
+                        FerrousLogger.shared.debug("Loaded GitHub token from file: \(tokenPath.path)", log: self.logger)
                         
                         // Save to keychain for future use
                         _ = saveTokenToKeychain(token: token)
                         return
                     }
                 } catch {
-                    logger.error("Failed to load GitHub token from file \(tokenPath.path): \(error)")
+                    FerrousLogger.shared.error("Failed to load GitHub token from file \(tokenPath.path): \(error)", log: self.logger)
                 }
             }
         }
         
         // If we've got this far, no token was found
-        logger.warning("No GitHub token found in keychain, environment variables, or files")
+        FerrousLogger.shared.warning("No GitHub token found in keychain, environment variables, or files", log: self.logger)
     }
     
     /// Loads the GitHub token from the Keychain
@@ -213,10 +213,10 @@ final class GitHubService {
         let status = SecItemAdd(addQuery as CFDictionary, nil)
         
         if status == errSecSuccess {
-            logger.debug("Saved GitHub token to keychain")
+            FerrousLogger.shared.debug("Saved GitHub token to keychain", log: self.logger)
             return true
         } else {
-            logger.error("Failed to save GitHub token to keychain. Status: \(status)")
+            FerrousLogger.shared.error("Failed to save GitHub token to keychain. Status: \(status)", log: self.logger)
             return false
         }
     }

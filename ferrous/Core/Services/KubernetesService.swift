@@ -54,14 +54,14 @@ final class KubernetesService {
         dispatchGroup.notify(queue: .main) {
             // If both failed, return the local error (or remote if no local error)
             if let localError = localError, let remoteError = remoteError {
-                self.logger.error("Both context refreshes failed - local: \(localError), remote: \(remoteError)")
+                FerrousLogger.shared.error("Both context refreshes failed - local: \(localError), remote: \(remoteError)", log: self.logger)
                 completion(.failure(localError))
                 return
             }
 
             // If either succeeded, consider it a success
             if localError == nil || remoteError == nil {
-                self.logger.debug("Contexts refreshed - local: \(self.localContext != nil), remote: \(self.stableContext != nil)")
+                FerrousLogger.shared.debug("Contexts refreshed - local: \(self.localContext != nil), remote: \(self.stableContext != nil)", log: self.logger)
                 completion(.success(()))
             } else if let localError = localError {
                 completion(.failure(localError))
@@ -83,7 +83,7 @@ final class KubernetesService {
 
                 // Check if file exists
                 guard FileManager.default.fileExists(atPath: kubeConfigPath.path) else {
-                    self.logger.warning("Kubeconfig file not found at \(kubeConfigPath.path)")
+                    FerrousLogger.shared.warning("Kubeconfig file not found at \(kubeConfigPath.path)", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.configNotFound))
                     }
@@ -93,7 +93,7 @@ final class KubernetesService {
                 // Read and parse the YAML
                 let kubeConfigYaml = try String(contentsOf: kubeConfigPath, encoding: .utf8)
                 guard let kubeConfig = try Yams.load(yaml: kubeConfigYaml) as? [String: Any] else {
-                    self.logger.error("Failed to parse kubeconfig as YAML")
+                    FerrousLogger.shared.error("Failed to parse kubeconfig as YAML", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.invalidConfig))
                     }
@@ -102,7 +102,7 @@ final class KubernetesService {
 
                 // Extract current context name
                 guard let currentContextName = kubeConfig["current-context"] as? String else {
-                    self.logger.warning("No current-context found in kubeconfig")
+                    FerrousLogger.shared.warning("No current-context found in kubeconfig", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.noCurrentContext))
                     }
@@ -111,7 +111,7 @@ final class KubernetesService {
 
                 // Find the context in the contexts list
                 guard let contexts = kubeConfig["contexts"] as? [[String: Any]] else {
-                    self.logger.warning("No contexts found in kubeconfig")
+                    FerrousLogger.shared.warning("No contexts found in kubeconfig", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.noContexts))
                     }
@@ -128,7 +128,7 @@ final class KubernetesService {
                 }
 
                 guard let contextDetails = foundContextDetails else {
-                    self.logger.warning("Current context details not found")
+                    FerrousLogger.shared.warning("Current context details not found", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.contextDetailsNotFound))
                     }
@@ -137,7 +137,7 @@ final class KubernetesService {
 
                 // Extract cluster name
                 guard let clusterName = contextDetails["cluster"] as? String else {
-                    self.logger.warning("Cluster name not found in current context")
+                    FerrousLogger.shared.warning("Cluster name not found in current context", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.clusterNotFound))
                     }
@@ -160,13 +160,13 @@ final class KubernetesService {
                 )
 
                 self.localContext = context
-                self.logger.debug("Local context updated: \(context.name) (\(context.cluster))")
+                FerrousLogger.shared.debug("Local context updated: \(context.name) (\(context.cluster))", log: self.logger)
 
                 DispatchQueue.main.async {
                     completion(.success(()))
                 }
             } catch {
-                self.logger.error("Error refreshing local context: \(error)")
+                FerrousLogger.shared.error("Error refreshing local context: \(error)", log: self.logger)
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -187,7 +187,7 @@ final class KubernetesService {
             let (output, error, exitCode) = Process.shell("aws eks list-clusters --region eu-west-1")
 
             if exitCode != 0 {
-                self.logger.error("Failed to list EKS clusters: \(error)")
+                FerrousLogger.shared.error("Failed to list EKS clusters: \(error)", log: self.logger)
                 DispatchQueue.main.async {
                     completion(.failure(KubernetesError.eksCommandFailed(error)))
                 }
@@ -197,7 +197,7 @@ final class KubernetesService {
             // Parse the JSON output
             do {
                 guard let jsonData = output.data(using: .utf8) else {
-                    self.logger.error("Could not convert output to data")
+                    FerrousLogger.shared.error("Could not convert output to data", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.invalidOutput))
                     }
@@ -206,7 +206,7 @@ final class KubernetesService {
 
                 let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
                 guard let clusters = json?["clusters"] as? [String] else {
-                    self.logger.error("Could not parse clusters from JSON")
+                    FerrousLogger.shared.error("Could not parse clusters from JSON", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.invalidOutput))
                     }
@@ -214,7 +214,7 @@ final class KubernetesService {
                 }
 
                 if clusters.isEmpty {
-                    self.logger.warning("No EKS clusters found")
+                    FerrousLogger.shared.warning("No EKS clusters found", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.noClusters))
                     }
@@ -238,7 +238,7 @@ final class KubernetesService {
                 }
 
                 guard let clusterName = stableClusterName else {
-                    self.logger.warning("Could not determine stable cluster")
+                    FerrousLogger.shared.warning("Could not determine stable cluster", log: self.logger)
                     DispatchQueue.main.async {
                         completion(.failure(KubernetesError.noStableCluster))
                     }
@@ -254,7 +254,7 @@ final class KubernetesService {
                 )
 
                 self.stableContext = context
-                self.logger.debug("Stable context updated: \(context.name)")
+                FerrousLogger.shared.debug("Stable context updated: \(context.name)", log: self.logger)
 
                 // Update local context's isStable flag if needed
                 if let localContext = self.localContext {
@@ -268,7 +268,7 @@ final class KubernetesService {
                     completion(.success(()))
                 }
             } catch {
-                self.logger.error("Error parsing EKS output: \(error)")
+                FerrousLogger.shared.error("Error parsing EKS output: \(error)", log: self.logger)
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
@@ -280,12 +280,12 @@ final class KubernetesService {
     /// - Parameter completion: Callback with result containing success status or error
     func updateKubeConfig(completion: @escaping (Result<Void, Error>) -> Void) {
         guard let stableContext = stableContext else {
-            logger.warning("No stable context available")
+            FerrousLogger.shared.warning("No stable context available", log: self.logger)
             completion(.failure(KubernetesError.noStableCluster))
             return
         }
 
-        logger.info("Updating kubeconfig to use stable context: \(stableContext.name)")
+        FerrousLogger.shared.info("Updating kubeconfig to use stable context: \(stableContext.name)", log: self.logger)
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self = self else { return }
@@ -295,7 +295,7 @@ final class KubernetesService {
             let (_, error, exitCode) = Process.shell(command)
 
             if exitCode != 0 {
-                self.logger.error("Failed to update kubeconfig: \(error)")
+                FerrousLogger.shared.error("Failed to update kubeconfig: \(error)", log: self.logger)
                 DispatchQueue.main.async {
                     completion(.failure(KubernetesError.updateFailed(error)))
                 }
@@ -309,10 +309,10 @@ final class KubernetesService {
             self.refreshLocalContext { result in
                 switch result {
                 case .success:
-                    self.logger.info("Kubeconfig updated successfully")
+                    FerrousLogger.shared.info("Kubeconfig updated successfully", log: self.logger)
                     completion(.success(()))
                 case .failure(let error):
-                    self.logger.error("Failed to refresh local context after update: \(error)")
+                    FerrousLogger.shared.error("Failed to refresh local context after update: \(error)", log: self.logger)
                     completion(.failure(error))
                 }
             }

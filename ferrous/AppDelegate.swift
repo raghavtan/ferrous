@@ -11,7 +11,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Called when the application has finished launching
     func applicationDidFinishLaunching(_ notification: Notification) {
-        logger.info("Application starting - version \(Constants.version)")
+        FerrousLogger.shared.info("Application starting - version \(Constants.version)", log: logger)
 
         // Hide dock icon
         NSApp.setActivationPolicy(.accessory)
@@ -25,22 +25,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Initialize the status bar controller
         statusBarController = StatusBarController()
 
-        logger.info("Application startup complete")
+        FerrousLogger.shared.info("Application startup complete", log: logger)
     }
 
     /// Called when the application will terminate
     func applicationWillTerminate(_ notification: Notification) {
-        logger.info("Application shutting down")
+        FerrousLogger.shared.info("Application shutting down", log: logger)
 
         // Stop the background service
         BackgroundService.shared.stop()
 
-        logger.info("Application shutdown complete")
+        FerrousLogger.shared.info("Application shutdown complete", log: logger)
     }
 
     /// Initializes the application configuration
     private func initializeConfiguration() {
-        logger.debug("Initializing configuration")
+        FerrousLogger.shared.debug("Initializing configuration", log: logger)
 
         _ = ConfigManager.shared.copyDefaultConfigFromBundle()
 
@@ -48,7 +48,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let configLoaded = ConfigManager.shared.loadConfig()
 
         if !configLoaded {
-            logger.warning("Failed to load configuration")
+            FerrousLogger.shared.warning("Failed to load configuration", log: logger)
 
             // Create default config
             let username = ProcessInfo.processInfo.environment["USER"] ?? "default-user"
@@ -60,9 +60,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
 
             let saved = ConfigManager.shared.saveConfig(config)
-            logger.debug("Created and saved default configuration: \(saved)")
+            FerrousLogger.shared.debug("Created and saved default configuration: \(saved)", log: logger)
         } else {
-            logger.debug("Configuration loaded successfully")
+            FerrousLogger.shared.debug("Configuration loaded successfully", log: logger)
         }
     }
 }

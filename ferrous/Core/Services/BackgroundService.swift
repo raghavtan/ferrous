@@ -46,7 +46,7 @@ final class BackgroundService {
     func start() {
         stop() // Stop any existing timers
         
-        logger.info("Starting background services")
+        FerrousLogger.shared.info("Starting background services", log: logger)
         
         // Start GitHub service
         startGitHubTimer()
@@ -66,7 +66,7 @@ final class BackgroundService {
     
     /// Stops all background tasks
     func stop() {
-        logger.info("Stopping all background services")
+        FerrousLogger.shared.info("Stopping all background services", log: logger)
         
         githubTimer?.invalidate()
         toolsTimer?.invalidate()
@@ -90,7 +90,7 @@ final class BackgroundService {
         kubernetesRefreshInterval = interval * 3 // 3x base interval
         versionRefreshInterval = interval * 30   // 30x base interval
         
-        logger.debug("Updated refresh intervals - GitHub: \(githubRefreshInterval)s, Tools: \(toolsRefreshInterval)s, Kubernetes: \(kubernetesRefreshInterval)s, Version: \(versionRefreshInterval)s")
+        FerrousLogger.shared.debug("Updated refresh intervals - GitHub: \(githubRefreshInterval)s, Tools: \(toolsRefreshInterval)s, Kubernetes: \(kubernetesRefreshInterval)s, Version: \(versionRefreshInterval)s", log: logger)
         
         // Restart timers with new intervals
         if githubTimer != nil || toolsTimer != nil || kubernetesTimer != nil || versionTimer != nil {
@@ -101,7 +101,7 @@ final class BackgroundService {
     
     /// Refreshes all data immediately
     func refreshAll() {
-        logger.debug("Manually refreshing all services")
+        FerrousLogger.shared.debug("Manually refreshing all services", log: logger)
         refreshGitHubPRs()
         refreshToolStatuses()
         refreshKubernetesContexts()
@@ -110,21 +110,23 @@ final class BackgroundService {
     
     /// Updates GitHub pull requests
     func refreshGitHubPRs() {
-        logger.debug("Refreshing GitHub pull requests")
+        FerrousLogger.shared.debug("Refreshing GitHub pull requests", log: logger)
         
         // Use the GitHub service to fetch real PRs
         // This is where you would call your actual GitHub service to fetch data
         GitHubService.shared.fetchPullRequests { [weak self] result in
+            guard let self = self else { return }
+            
             switch result {
             case .success(let pullRequests):
                 DispatchQueue.main.async {
-                    self?.githubUpdated.send(pullRequests)
-                    self?.logger.debug("GitHub pull requests updated successfully")
+                    self.githubUpdated.send(pullRequests)
+                    FerrousLogger.shared.debug("GitHub pull requests updated successfully", log: self.logger)
                 }
             case .failure(let error):
-                self?.logger.error("Failed to refresh GitHub pull requests: \(error)")
+                FerrousLogger.shared.error("Failed to refresh GitHub pull requests: \(error)", log: self.logger)
                 DispatchQueue.main.async {
-                    self?.githubUpdated.send([]) // Send empty array on failure
+                    self.githubUpdated.send([]) // Send empty array on failure
                 }
             }
         }
@@ -132,20 +134,22 @@ final class BackgroundService {
     
     /// Updates tool statuses
     func refreshToolStatuses() {
-        logger.debug("Refreshing tool statuses")
+        FerrousLogger.shared.debug("Refreshing tool statuses", log: logger)
         
         // Use the tool check service to check status of all tools
         ToolCheckService.shared.checkAllTools { [weak self] result in
+            guard let self = self else { return }
+            
             switch result {
             case .success(let toolStatuses):
                 DispatchQueue.main.async {
-                    self?.toolStatusesUpdated.send(toolStatuses)
-                    self?.logger.debug("Tool statuses updated successfully")
+                    self.toolStatusesUpdated.send(toolStatuses)
+                    FerrousLogger.shared.debug("Tool statuses updated successfully", log: self.logger)
                 }
             case .failure(let error):
-                self?.logger.error("Failed to refresh tool statuses: \(error)")
+                FerrousLogger.shared.error("Failed to refresh tool statuses: \(error)", log: self.logger)
                 DispatchQueue.main.async {
-                    self?.toolStatusesUpdated.send([]) // Send empty array on failure
+                    self.toolStatusesUpdated.send([]) // Send empty array on failure
                 }
             }
         }
@@ -153,23 +157,25 @@ final class BackgroundService {
     
     /// Updates Kubernetes contexts
     func refreshKubernetesContexts() {
-        logger.debug("Refreshing Kubernetes contexts")
+        FerrousLogger.shared.debug("Refreshing Kubernetes contexts", log: logger)
         
         // Use the Kubernetes service to fetch contexts
         KubernetesService.shared.refreshContexts { [weak self] result in
+            guard let self = self else { return }
+            
             switch result {
             case .success:
                 DispatchQueue.main.async {
-                    self?.kubernetesContextsUpdated.send((
+                    self.kubernetesContextsUpdated.send((
                         local: KubernetesService.shared.localContext,
                         remote: KubernetesService.shared.stableContext
                     ))
-                    self?.logger.debug("Kubernetes contexts updated successfully")
+                    FerrousLogger.shared.debug("Kubernetes contexts updated successfully", log: self.logger)
                 }
             case .failure(let error):
-                self?.logger.error("Failed to refresh Kubernetes contexts: \(error)")
+                FerrousLogger.shared.error("Failed to refresh Kubernetes contexts: \(error)", log: self.logger)
                 DispatchQueue.main.async {
-                    self?.kubernetesContextsUpdated.send((local: nil, remote: nil))
+                    self.kubernetesContextsUpdated.send((local: nil, remote: nil))
                 }
             }
         }
@@ -177,7 +183,7 @@ final class BackgroundService {
     
     /// Updates version information
     func refreshVersionInfo() {
-        logger.debug("Refreshing version information")
+        FerrousLogger.shared.debug("Refreshing version information", log: logger)
         
         // Use the version service to check for updates
         VersionService.shared.checkForUpdates { [weak self] result in
@@ -192,10 +198,10 @@ final class BackgroundService {
                         updateAvailable: updateAvailable,
                         releaseUrl: VersionService.shared.releaseURL
                     ))
-                    self.logger.debug("Version information updated successfully")
+                    FerrousLogger.shared.debug("Version information updated successfully", log: self.logger)
                 }
             case .failure(let error):
-                self.logger.error("Failed to refresh version information: \(error)")
+                FerrousLogger.shared.error("Failed to refresh version information: \(error)", log: self.logger)
             }
         }
     }
