@@ -100,9 +100,6 @@ final class MainMenuViewModel: ObservableObject {
                 self?.releaseURL = versionInfo.releaseUrl
             }
             .store(in: &cancellables)
-
-        // Initial refresh
-        refreshAll()
     }
 
     /// Stops monitoring for updates
@@ -126,7 +123,7 @@ final class MainMenuViewModel: ObservableObject {
     /// - Parameter interval: The new interval in seconds
     func updateRefreshInterval(_ interval: Double) {
         logger.debug("Updating refresh interval to \(interval) seconds")
-        BackgroundService.shared.updateRefreshInterval(interval)
+        BackgroundService.shared.updateRefreshIntervals(baseInterval: interval)
 
         // Save to user defaults
         UserDefaults.standard.set(interval, forKey: Constants.UserDefaultsKey.refreshInterval)

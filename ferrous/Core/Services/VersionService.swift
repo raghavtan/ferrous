@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 /// Service for checking app version and available updates.
 final class VersionService {
@@ -19,6 +20,9 @@ final class VersionService {
 
     /// URL to the latest release
     private(set) var releaseURL: URL?
+
+    /// GitHub token for authentication
+    private var githubToken: String?
 
     /// URL session for network requests
     private let session: URLSession
@@ -47,6 +51,9 @@ final class VersionService {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 15.0
         session = URLSession(configuration: config)
+        
+        // Load GitHub token
+        loadToken()
 
         logger.info("Initialized version service - current version: \(currentVersion)")
     }
@@ -67,8 +74,11 @@ final class VersionService {
         request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
 
         // Add auth token if available
-        if let token = ProcessInfo.processInfo.environment["GITHUB_TOKEN"] {
+        if let token = githubToken, !token.isEmpty {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            logger.debug("Using GitHub token for version check")
+        } else {
+            logger.warning("No GitHub token available for version check")
         }
 
         let task = session.dataTask(with: request) { [weak self] data, response, error in
@@ -92,6 +102,9 @@ final class VersionService {
 
             if httpResponse.statusCode != 200 {
                 self.logger.error("HTTP error: \(httpResponse.statusCode)")
+                if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
+                    self.logger.error("Authentication issue. Token may be invalid or missing.")
+                }
                 DispatchQueue.main.async {
                     completion(.failure(VersionError.httpError(httpResponse.statusCode)))
                 }
@@ -163,6 +176,155 @@ final class VersionService {
 
         // Versions are identical
         return false
+    }
+    
+    /// Loads the GitHub token from keychain, environment variable, or file
+    private func loadToken() {
+        // First try keychain
+        if let keychainToken = loadTokenFromKeychain() {
+            logger.debug("Using GitHub token from keychain")
+            githubToken = keychainToken
+            return
+        }
+        
+        // Next try environment variables using all common formats
+        let envVarNames = ["GITHUB_TOKEN", "GH_TOKEN", "GITHUB_API_TOKEN", "GH_API_TOKEN"]
+        
+        for varName in envVarNames {
+            if let envToken = ProcessInfo.processInfo.environment[varName], !envToken.isEmpty {
+                logger.debug("Using GitHub token from environment variable \(varName)")
+                githubToken = envToken
+                
+                // Save to keychain for future use
+                _ = saveTokenToKeychain(token: envToken)
+                return
+            }
+        }
+        
+        // Try shell environment value via process
+        if let shellToken = getTokenFromShellEnvironment() {
+            logger.debug("Using GitHub token from shell environment")
+            githubToken = shellToken
+            
+            // Save to keychain for future use
+            _ = saveTokenToKeychain(token: shellToken)
+            return
+        }
+        
+        // Fallback to file
+        let fileManager = FileManager.default
+        let homeDir = fileManager.homeDirectoryForCurrentUser
+        
+        // Check common token file locations
+        let tokenPaths = [
+            homeDir.appendingPathComponent(".github_token"),
+            homeDir.appendingPathComponent(".github/token"),
+            homeDir.appendingPathComponent(".config/gh/token")
+        ]
+        
+        for tokenPath in tokenPaths {
+            if fileManager.fileExists(atPath: tokenPath.path) {
+                do {
+                    let token = try String(contentsOf: tokenPath, encoding: .utf8)
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+                    
+                    if !token.isEmpty {
+                        githubToken = token
+                        logger.debug("Loaded GitHub token from file: \(tokenPath.path)")
+                        
+                        // Save to keychain for future use
+                        _ = saveTokenToKeychain(token: token)
+                        return
+                    }
+                } catch {
+                    logger.error("Failed to load GitHub token from file \(tokenPath.path): \(error)")
+                }
+            }
+        }
+        
+        // If we've got this far, no token was found
+        logger.warning("No GitHub token found in keychain, environment variables, or files")
+    }
+    
+    /// Loads the GitHub token from the Keychain
+    /// - Returns: The token if found, nil otherwise
+    private func loadTokenFromKeychain() -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "ferrous-github-token",
+            kSecReturnData as String: true
+        ]
+        
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        
+        guard status == errSecSuccess,
+              let data = item as? Data,
+              let token = String(data: data, encoding: .utf8),
+              !token.isEmpty else {
+            return nil
+        }
+        
+        return token
+    }
+    
+    /// Saves the GitHub token to the Keychain
+    /// - Parameter token: The token to save
+    /// - Returns: Whether the operation was successful
+    @discardableResult
+    private func saveTokenToKeychain(token: String) -> Bool {
+        guard !token.isEmpty else { return false }
+        
+        // First, try to delete any existing item
+        let deleteQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "ferrous-github-token"
+        ]
+        
+        SecItemDelete(deleteQuery as CFDictionary)
+        
+        // Now add the new token
+        let tokenData = token.data(using: .utf8)!
+        let addQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "ferrous-github-token",
+            kSecValueData as String: tokenData
+        ]
+        
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
+        
+        if status == errSecSuccess {
+            logger.debug("Saved GitHub token to keychain")
+            return true
+        } else {
+            logger.error("Failed to save GitHub token to keychain. Status: \(status)")
+            return false
+        }
+    }
+    
+    /// Gets the GitHub token from shell environment by launching a subprocess
+    /// - Returns: The token if found, nil otherwise
+    private func getTokenFromShellEnvironment() -> String? {
+        // Try to get token from common shell profile files by sourcing them
+        let commands = [
+            "source ~/.zshrc > /dev/null 2>&1 && echo $GITHUB_TOKEN",
+            "source ~/.bashrc > /dev/null 2>&1 && echo $GITHUB_TOKEN",
+            "source ~/.bash_profile > /dev/null 2>&1 && echo $GITHUB_TOKEN",
+            "security find-generic-password -a ${USER} -s 'github-token' -w 2>/dev/null" // MacOS specific
+        ]
+        
+        for command in commands {
+            let (output, _, exitCode) = Process.shell(command)
+            
+            if exitCode == 0 {
+                let token = output.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !token.isEmpty {
+                    return token
+                }
+            }
+        }
+        
+        return nil
     }
 }
 
