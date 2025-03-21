@@ -33,6 +33,11 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.new-version}}
 
+      - name: rename
+        run: |
+          mv dist/ferrous-*.dmg dist/ferrous-${{ steps.version.outputs.new-version}}.dmg
+          mv dist/ferrous-*.pkg dist/ferrous-${{ steps.version.outputs.new-version}}.pkg
+
       - name: Release
         uses: motain/onefootball-actions/bump-release@master
         with:
@@ -42,5 +47,5 @@ jobs:
           release_only: true
           generate_notes: true
           assets: |
-            dist/*.dmg
-            dist/*.pkg
+            dist/ferrous-${{ steps.version.outputs.new-version}}.dmg
+            dist/ferrous-${{ steps.version.outputs.new-version}}.pkg
