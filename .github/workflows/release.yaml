@@ -29,25 +29,17 @@ jobs:
 
       - name: Package
         run: make package
-
-      - name: Upload DMG artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferrous-dmg
-          path: dist/*.dmg
-
-      - name: Upload PKG artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferrous-pkg
-          path: dist/*.pkg
+        env:
+          VERSION: ${{ steps.version.outputs.new-version}}
 
       - name: Release
-        uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
+        uses: motain/onefootball-actions/bump-release@master
         with:
-          files: |
+          access_token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          version: ${{ steps.version.outputs.new-version}}
+          release_only: true
+          generate_notes: true
+          assets: |
             dist/*.dmg
             dist/*.pkg
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
