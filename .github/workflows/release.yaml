@@ -3,35 +3,29 @@ name: Build and Package Ferrous
 on:
   push:
     branches: [main, master]
-    tags:
-      - 'v*'
-  pull_request:
-    branches: [main, master]
 
 jobs:
   build:
     runs-on: macos-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Needed for git history (for version number)
 
-      - name: Make scripts executable
-        run: |
-          chmod +x Scripts/*.sh
-          chmod +x Scripts/generate-version.sh
+      - name: Generate Version
+        id: version
+        uses: motain/onefootball-actions/bump-release@master
+        with:
+          access_token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          tag_only: true
 
-      - name: Generate version number
-        run: |
-          # Generate version and export to GitHub env
-          ./Scripts/generate-version.sh --export
-          echo "Building version $VERSION"
 
       - name: Build
         run: make build
         env:
-          VERSION: ${{ env.VERSION }}
+          VERSION: ${{ steps.version.outputs.new-version}}
 
       - name: Package
         run: make package
@@ -56,4 +50,4 @@ jobs:
             dist/*.dmg
             dist/*.pkg
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
