@@ -1,0 +1,64 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: latest-stable
+    
+    - name: Make scripts executable
+      run: chmod +x Scripts/*.sh
+    
+    - name: Test
+      run: make test
+
+    - name: Get version
+      id: get_version
+      run: |
+        VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\/v//')
+        echo "VERSION=$VERSION" >> $GITHUB_ENV    
+
+    - name: Package
+      run: make build package
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ env.VERSION }}
+        draft: false
+        prerelease: false
+    
+    - name: Upload DMG
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/ferrous-${{ env.VERSION }}-*.dmg
+        asset_name: ferrous-${{ env.VERSION }}.dmg
+        asset_content_type: application/x-apple-diskimage
+    
+    - name: Upload PKG
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./dist/ferrous-${{ env.VERSION }}-*.pkg
+        asset_name: ferrous-${{ env.VERSION }}.pkg
+        asset_content_type: application/x-newton-compatible-pkg

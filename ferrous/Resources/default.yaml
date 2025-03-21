@@ -1,0 +1,55 @@
+tierzero:
+  github:
+    user: ""
+    organisation: "onefootball"
+    timezone: "Europe/Berlin"
+    repositories:
+      - onefootball/ferrous
+  links:
+    - name: Trusted Advisor
+      url: https://us-east-1.console.aws.amazon.com/trustedadvisor/home?region=us-east-1#/dashboard
+    - name: AWS Health Dashboard
+      url: https://health.console.aws.amazon.com/health/home#/account/dashboard/scheduled-changes?viewType=table
+
+checker:
+  tools:
+    kubectl:
+      title: kubectl
+      help: "Check kubectl status"
+      checkCommand: "which kubectl"
+    helm:
+      title: helm
+      help: "Check helm status"
+      checkCommand: "which helm"
+    vpn:
+      title: vpn
+      help: "Check VPN status"
+      checkCommand: "ping -c 1 10.0.0.1"
+    aws:
+      title: aws-cli
+      help: "Check AWS CLI status"
+      checkCommand: "which aws"
+    git:
+      title: git
+      help: "Check Git status"
+      checkCommand: "which git"
+
+jumpcloud:
+  title: JumpCloud
+  help: "Open JumpCloud"
+  type: url
+  url: "https://console.jumpcloud.com/userconsole#/"
+
+ITsupport:
+  title: IT Support
+  help: "Open IT Support"
+  type: url
+  url: "https://onefootball.atlassian.net/servicedesk/customer/portal/1"
+
+SAML:
+  title: SAML Profiles
+  help: "List of SAML Profiles"
+  type: dynamicDropdown
+  file: "~/.saml2aws"
+  jsonPathExpressions: "$..name"
+  parser: "toml"
