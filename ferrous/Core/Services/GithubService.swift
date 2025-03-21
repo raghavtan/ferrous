@@ -53,7 +53,7 @@ final class GitHubService {
         organization = config.organisation
         repositories = config.repositories
         
-        logger.debug("Loaded GitHub config - user: \(username), org: \(organization), repos: \(repositories.count)")
+        logger.info("Loaded GitHub config - user: \(username), org: \(organization), repos: \(repositories.count)")
         isConfigured = true
     }
     
@@ -61,7 +61,7 @@ final class GitHubService {
     private func loadToken() {
         // First try environment variable
         if let envToken = ProcessInfo.processInfo.environment["GITHUB_TOKEN"] {
-            logger.debug("Using GitHub token from environment variable")
+            logger.info("Using GitHub token from environment variable")
             githubToken = envToken
             return
         }
