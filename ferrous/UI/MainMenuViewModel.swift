@@ -43,6 +43,9 @@ final class MainMenuViewModel: ObservableObject {
 
     /// Custom actions from config
     @Published var customActions: [CustomAction] = []
+    
+    /// The latest available version
+    @Published var latestVersion: String?
 
     // MARK: - Private Properties
 

@@ -5,7 +5,6 @@
 //  Created by Raghav Tandon on 21.03.25.
 //
 
-
 import SwiftUI
 
 /// Tab view for links and version info
@@ -20,21 +19,31 @@ struct LinksTabView: View {
                     .font(.system(size: 13, weight: .medium))
                     .padding(.vertical, 4)
                 
-                HStack {
-                    Text("Current: \(Constants.version)")
-                        .font(.system(size: 12))
-                    
-                    Spacer()
+                VStack(spacing: 2) {
+                    HStack {
+                        Text("Current: \(Constants.version)")
+                            .font(.system(size: 12))
+                        
+                        Spacer()
+                    }
                     
                     if viewModel.updateAvailable, let releaseURL = viewModel.releaseURL {
-                        Button(action: {
-                            NSWorkspace.shared.open(releaseURL)
-                        }) {
-                            Text("Update Available")
-                                .font(.system(size: 11))
+                        HStack {
+                            Text("Latest: \(viewModel.latestVersion ?? "Unknown")")
+                                .font(.system(size: 12))
+                                .foregroundColor(.green)
+                                
+                            Spacer()
+                            
+                            Button(action: {
+                                NSWorkspace.shared.open(releaseURL)
+                            }) {
+                                Text("Update Available")
+                                    .font(.system(size: 11))
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
                         }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
                     }
                 }
                 .padding(.bottom, 4)
